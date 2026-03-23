@@ -9,6 +9,7 @@ A modern web application that combines voice and text analysis to interpret emot
 ### 🎤 Audio Input
 - Record audio directly from your microphone using the Web Audio API
 - Real-time recording timer
+- **Automatic speech-to-text** — spoken words appear in text input as you speak
 - Automatic feature extraction from audio
 
 ### 📝 Text Input
@@ -62,7 +63,10 @@ subtext-site/
 
 ## How It Works
 
-### 1. Audio Analysis
+### 1. Voice Capture & Transcription
+- Records audio and simultaneously transcribes speech using Web Speech API
+- Recognized words automatically appear in the text input
+- Both audio features and text are analyzed for a complete picture
 - Records microphone input using Web Audio API
 - Analyzes frequency spectrum with FFT
 - Extracts RMS energy, pitch, and speech rate
@@ -163,6 +167,7 @@ Then enable GitHub Pages in repository settings.
 - HTTPS (for Web Audio API and MediaDevices)
 - Microphone permissions
 - Modern JavaScript (ES6)
+- For speech-to-text: Chrome/Edge, Safari 14.1+, or Firefox with specific settings
 
 ## Features Explained
 

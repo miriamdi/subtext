@@ -89,6 +89,11 @@ class SubtextApp {
             this.recordingDuration = 0;
             this.startTimer();
 
+            // Set up speech recognition callback
+            audioManager.onTextRecognized = (text, isInterim) => {
+                this.updateTextFromSpeech(text, isInterim);
+            };
+
             console.log('Recording started...');
         }
     }
@@ -110,7 +115,27 @@ class SubtextApp {
         this.audioFeatures = audioManager.extractFeatures(audioData);
         this.displayAudioFeatures();
 
+        // Clear callback
+        audioManager.onTextRecognized = null;
+
         console.log('Recording stopped. Features:', this.audioFeatures);
+    }
+
+    /**
+     * Update text input with recognized speech
+     */
+    updateTextFromSpeech(text, isInterim) {
+        if (isInterim) {
+            // Show interim (grayed out) - just display the final recognized text
+            // The interim is shown with a visual indicator
+            this.textInput.value = text;
+            // Optional: add a subtle style to show it's still being recognized
+            this.textInput.style.opacity = '0.8';
+        } else {
+            // Final result - keep it
+            this.textInput.value = text;
+            this.textInput.style.opacity = '1';
+        }
     }
 
     /**
@@ -242,6 +267,7 @@ class SubtextApp {
     resetApp() {
         // Clear inputs
         this.textInput.value = '';
+        this.textInput.style.opacity = '1';
 
         // Hide panels
         this.featuresPanel.style.display = 'none';
@@ -255,6 +281,9 @@ class SubtextApp {
         this.audioFeatures = null;
         this.emotion = null;
         this.nvcResult = null;
+
+        // Clear speech recognition callback
+        audioManager.onTextRecognized = null;
 
         // Reset buttons
         this.recordBtn.disabled = false;

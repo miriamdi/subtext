@@ -186,6 +186,12 @@ footer {
     color: var(--text-secondary);
 }
 
+.speech-hint {
+    margin-top: 0.75rem;
+    color: var(--text-light);
+    font-style: italic;
+}
+
 /* =========================
    Buttons
    ========================= */

@@ -13,6 +13,72 @@ class AudioManager {
         this.audioBuffer = [];
         this.recordingStartTime = null;
         this.timerInterval = null;
+        
+        // Speech recognition
+        this.recognition = null;
+        this.recognizedText = '';
+        this.isListening = false;
+        this.onTextRecognized = null;
+        this.initializeSpeechRecognition();
+    }
+
+    /**
+     * Initialize Web Speech API for speech-to-text
+     */
+    initializeSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            console.warn('Speech Recognition not supported in this browser');
+            return;
+        }
+
+        this.recognition = new SpeechRecognition();
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        this.recognition.lang = 'en-US';
+
+        this.recognition.onstart = () => {
+            this.isListening = true;
+            console.log('Speech recognition started');
+        };
+
+        this.recognition.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+
+            // Update recognized text
+            if (finalTranscript) {
+                this.recognizedText += finalTranscript;
+                if (this.onTextRecognized) {
+                    this.onTextRecognized(this.recognizedText, false); // false = final
+                }
+            }
+
+            // Show interim results real-time
+            if (interimTranscript && this.onTextRecognized) {
+                this.onTextRecognized(this.recognizedText + interimTranscript, true); // true = interim
+            }
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+        };
+
+        this.recognition.onend = () => {
+            this.isListening = false;
+            console.log('Speech recognition ended');
+        };
     }
 
     /**
@@ -50,6 +116,16 @@ class AudioManager {
         this.isRecording = true;
         this.audioBuffer = [];
         this.recordingStartTime = Date.now();
+        this.recognizedText = '';
+        
+        // Start speech recognition
+        if (this.recognition && !this.isListening) {
+            try {
+                this.recognition.start();
+            } catch (e) {
+                console.warn('Speech recognition already running or not available');
+            }
+        }
         
         // Start capturing audio data
         this.captureAudio();
@@ -75,6 +151,16 @@ class AudioManager {
      */
     stopRecording() {
         this.isRecording = false;
+        
+        // Stop speech recognition
+        if (this.recognition && this.isListening) {
+            try {
+                this.recognition.stop();
+            } catch (e) {
+                console.warn('Error stopping speech recognition');
+            }
+        }
+        
         return this.audioBuffer;
     }
 
