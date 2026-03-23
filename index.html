@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subtext - Emotional Signal Interpreter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="title">Subtext</h1>
+            <p class="subtitle">Understand what's beneath your words</p>
+        </header>
+
+        <main>
+            <!-- Audio Recording Section -->
+            <section class="panel audio-panel">
+                <h2>Audio Input</h2>
+                <div class="audio-controls">
+                    <button id="recordBtn" class="btn btn-primary">
+                        <span class="icon">🎙️</span> Start Recording
+                    </button>
+                    <button id="stopBtn" class="btn btn-danger" disabled>Stop Recording</button>
+                </div>
+                <div class="recording-status">
+                    <span id="recordingTime" class="status-text" style="display:none;">Recording: <span id="timer">0:00</span></span>
+                    <span id="recordingComplete" class="status-text success" style="display:none;">✓ Audio captured</span>
+                </div>
+            </section>
+
+            <!-- Text Input Section -->
+            <section class="panel text-panel">
+                <h2>Text Input</h2>
+                <textarea 
+                    id="textInput" 
+                    class="textarea"
+                    placeholder="Enter what's on your mind... (can use with or without audio)"
+                    rows="6"
+                ></textarea>
+                <div class="text-hint">
+                    <small>💡 Tip: Be as honest and detailed as you want</small>
+                </div>
+            </section>
+
+            <!-- Analyze Button -->
+            <div class="action-section">
+                <button id="analyzeBtn" class="btn btn-analyze">
+                    <span class="icon">✨</span> Analyze & Interpret
+                </button>
+            </div>
+
+            <!-- Audio Features Visualization -->
+            <section class="panel features-panel" id="featuresPanel" style="display:none;">
+                <h2>Audio Features Detected</h2>
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <label>Volume (Energy)</label>
+                        <div class="feature-bar">
+                            <div class="feature-fill" id="volumeFill"></div>
+                        </div>
+                        <span class="feature-value" id="volumeValue">—</span>
+                    </div>
+                    <div class="feature-item">
+                        <label>Pitch Estimate</label>
+                        <div class="feature-bar">
+                            <div class="feature-fill" id="pitchFill"></div>
+                        </div>
+                        <span class="feature-value" id="pitchValue">—</span>
+                    </div>
+                    <div class="feature-item">
+                        <label>Speech Rate</label>
+                        <div class="feature-bar">
+                            <div class="feature-fill" id="rateFill"></div>
+                        </div>
+                        <span class="feature-value" id="rateValue">—</span>
+                    </div>
+                    <div class="feature-item">
+                        <label>Expressiveness</label>
+                        <div class="feature-bar">
+                            <div class="feature-fill" id="expressFill"></div>
+                        </div>
+                        <span class="feature-value" id="expressValue">—</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Emotion Indicators -->
+            <section class="panel emotion-panel" id="emotionPanel" style="display:none;">
+                <h2>Emotional State</h2>
+                <div class="emotion-2d">
+                    <div class="emotion-axes">
+                        <div class="axis-label axis-label-left">Negative</div>
+                        <div class="axis-label axis-label-right">Positive</div>
+                        <div class="axis-label axis-label-bottom">Low Energy</div>
+                        <div class="axis-label axis-label-top">High Energy</div>
+                        <div class="emotion-point" id="emotionPoint"></div>
+                    </div>
+                </div>
+                <div class="emotion-values">
+                    <div class="emotion-value">
+                        <span class="label">Valence (Sentiment):</span>
+                        <span class="value" id="valenceValue">—</span>
+                    </div>
+                    <div class="emotion-value">
+                        <span class="label">Arousal (Energy):</span>
+                        <span class="value" id="arousalValue">—</span>
+                    </div>
+                    <div class="emotion-value">
+                        <span class="label">Confidence:</span>
+                        <span class="value" id="confidenceValue">—</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- NVC Results Section -->
+            <section class="panel results-panel" id="resultsPanel" style="display:none;">
+                <h2>Nonviolent Communication (NVC)</h2>
+                <div class="nvc-framework">
+                    <div class="nvc-item">
+                        <h3>Observation</h3>
+                        <p id="nvcObservation" class="nvc-content">—</p>
+                    </div>
+                    <div class="nvc-item">
+                        <h3>Feeling</h3>
+                        <p id="nvcFeeling" class="nvc-content">—</p>
+                    </div>
+                    <div class="nvc-item">
+                        <h3>Need</h3>
+                        <p id="nvcNeed" class="nvc-content">—</p>
+                    </div>
+                    <div class="nvc-item">
+                        <h3>Request</h3>
+                        <p id="nvcRequest" class="nvc-content">—</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Clear Button -->
+            <div class="action-section" id="clearSection" style="display:none;">
+                <button id="clearBtn" class="btn btn-secondary">
+                    <span class="icon">↻</span> Start Over
+                </button>
+            </div>
+        </main>
+
+        <footer>
+            <p>🤝 Subtext helps you communicate with clarity and compassion</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="audio.js"></script>
+    <script src="analysis.js"></script>
+    <script src="agent.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
