@@ -177,7 +177,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="nvc.js"></script>
-    <script src="nvc-practice.js"></script>
+        <script src="nvc.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                new NVCPractice();
+            });
+        </script>
+        <script src="nvc-practice.js"></script>
 </body>
 </html>

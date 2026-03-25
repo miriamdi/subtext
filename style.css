@@ -285,15 +285,18 @@ footer {
     display: flex;
     gap: 1rem;
     align-items: stretch;
+    flex-direction: row;
 }
 
 .input-row-first .text-input-section {
-    flex: 1;
+    flex: 2 1 0;
+    min-width: 0;
 }
 
 .input-row-first .record-method {
-    flex: 0;
-    max-width: 160px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
     padding: 1rem 1.5rem !important;
     display: flex !important;
     flex-direction: column !important;

@@ -211,7 +211,7 @@ class SubtextApp {
         this.analyzeBtn.disabled = false;
 
         // Extract features
-        this.audioFeatures = audioManager.extractFeatures(audioData);
+        this.audioFeatures = audioManager.extractAudioFeatures(audioData);
         this.displayAudioFeatures();
 
         // Clear callback
@@ -261,25 +261,28 @@ class SubtextApp {
      */
     displayAudioFeatures() {
         if (!this.audioFeatures) return;
-
         const norm = emotionInference.normalizeFeatures(this.audioFeatures);
-
-        // Volume
-        this.volumeFill.style.width = (norm.volume * 100) + '%';
-        this.volumeValue.textContent = (norm.volume * 100).toFixed(0) + '%';
-
-        // Pitch
-        this.pitchFill.style.width = (norm.pitch * 100) + '%';
-        this.pitchValue.textContent = this.audioFeatures.pitch.toFixed(0) + ' Hz';
-
+        // Energy
+        this.volumeFill.style.width = (norm.energy * 100) + '%';
+        this.volumeValue.textContent = (norm.energy * 100).toFixed(0) + '%';
+        // Pitch Mean
+        this.pitchFill.style.width = (norm.pitchMean * 100) + '%';
+        this.pitchValue.textContent = (norm.pitchMean * 400).toFixed(0) + ' Hz';
+        // Pitch Variance
+        if (this.pitchVarianceValue) {
+            this.pitchVarianceValue.textContent = (norm.pitchVariance * 100).toFixed(0) + '%';
+        }
         // Speech Rate
         this.rateFill.style.width = (norm.speechRate * 100) + '%';
         this.rateValue.textContent = (norm.speechRate * 100).toFixed(0) + '%';
-
-        // Expressiveness
-        this.expressFill.style.width = (norm.expressiveness * 100) + '%';
-        this.expressValue.textContent = (norm.expressiveness * 100).toFixed(0) + '%';
-
+        // Pause Ratio
+        if (this.pauseRatioValue) {
+            this.pauseRatioValue.textContent = (norm.pauseRatio * 100).toFixed(0) + '%';
+        }
+        // Spectral Centroid
+        if (this.spectralCentroidValue) {
+            this.spectralCentroidValue.textContent = (norm.spectralCentroid * 100).toFixed(0) + '%';
+        }
         this.featuresPanel.style.display = 'block';
     }
 
@@ -395,40 +398,25 @@ class SubtextApp {
      * Display emotion state on 2D plane
      */
     displayEmotionState() {
-        const { valence, arousal } = this.emotion;
-
-        // Compute dominance from audio features and text
-        const dominance = EmotionUtils.computeDominance(this.audioFeatures, this.analyzedText);
-
-        // Map to discrete emotion label
-        const emotionData = EmotionUtils.mapToEmotion(valence, arousal, dominance);
-
+        const { valence, arousal, label, description } = this.emotion;
         // Position on 2D plane (300x300, centered at 150,150)
         const x = 150 + (valence * 150); // valence: -1 to 1 → 0 to 300
         const y = 150 - (arousal * 150); // arousal: 0 to 1 → 150 to 0 (inverted for display)
-
         this.emotionPoint.style.left = x + 'px';
         this.emotionPoint.style.top = y + 'px';
-
-        // Display emotion label
-        this.emotionLabel.textContent = emotionData.label;
-        this.emotionLabel.style.color = EmotionUtils.getEmotionColor(emotionData.category);
-
+        // Display emotion label and description
+        this.emotionLabel.textContent = `Emotional state: ${label} (${description})`;
         // Display values
         const valenceLabel = valence > 0 ? 'Positive' : valence < 0 ? 'Negative' : 'Neutral';
         const arousalLabel = arousal > 0.6 ? 'High Energy' : arousal < 0.4 ? 'Low Energy' : 'Balanced';
-
         this.valenceValue.textContent = `${valenceLabel} (${(valence * 100).toFixed(0)})`;
         this.arousalValue.textContent = `${arousalLabel} (${(arousal * 100).toFixed(0)})`;
-
         this.emotionPanel.style.display = 'block';
-
         console.log('Emotion State:', {
             valence: valence.toFixed(2),
             arousal: arousal.toFixed(2),
-            dominance: dominance.toFixed(0),
-            label: emotionData.label,
-            category: emotionData.category
+            label,
+            description
         });
     }
 

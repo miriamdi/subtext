@@ -181,32 +181,75 @@ class EmotionInference {
     /**
      * Infer emotion from combined audio and text data
      */
-    inferEmotion(audioFeatures, text) {
-        // Text-based analysis
-        const textValence = this.sentimentAnalyzer.analyzeSentiment(text);
-        const textArousal = this.sentimentAnalyzer.analyzeEnergy(text);
-        const textEmotions = this.sentimentAnalyzer.getEmotionsFromText(text);
+    inferEmotion(features, text) {
+        // Use only audio features if present, fallback to text if not
+        let valence = 0, arousal = 0, label = 'Neutral', description = '';
+        if (features) {
+            // Heuristic rules
+            // High energy + high pitch + fast rate → high arousal (excited / anxious)
+            // Low energy + low pitch → low arousal (sad / tired)
+            // High pitch variance → emotional intensity
+            // High pause ratio → hesitation / uncertainty
+            // Low pitch + high energy → anger-like
 
-        // Audio-based analysis
-        const audioArousal = this.calculateAudioArousal(audioFeatures);
-        const audioValenceHint = this.estimateAudioValence(audioFeatures);
+            // Arousal: mostly energy, pitchMean, speechRate
+            arousal = (
+                features.energy * 0.4 +
+                features.pitchMean * 0.2 +
+                features.speechRate * 0.3 +
+                (1 - features.pauseRatio) * 0.1
+            );
+            arousal = Math.max(0, Math.min(1, arousal));
 
-        // Combine audio and text
-        // Weight: 60% text sentiment, 40% audio hints
-        const combinedValence = (textValence * 0.6) + (audioValenceHint * 0.4);
+            // Valence: pitchMean, spectralCentroid, pauseRatio, pitchVariance
+            valence = (
+                (features.pitchMean - 0.5) * 0.5 +
+                (features.spectralCentroid - 0.5) * 0.3 +
+                (0.5 - features.pauseRatio) * 0.2
+            );
+            valence = Math.max(-1, Math.min(1, valence));
 
-        // Audio arousal is more reliable, weight it higher
-        // Weight: 35% text energy, 65% audio arousal
-        const combinedArousal = (textArousal * 0.35) + (audioArousal * 0.65);
-
+            // Label logic
+            if (arousal > 0.7 && valence > 0.2) {
+                label = 'Excited';
+                description = 'Positive, high energy';
+            } else if (arousal > 0.7 && valence < -0.2) {
+                label = 'Stressed';
+                description = 'Negative, high energy';
+            } else if (arousal < 0.4 && valence < -0.2) {
+                label = 'Sad';
+                description = 'Negative, low energy';
+            } else if (arousal < 0.4 && valence > 0.2) {
+                label = 'Calm';
+                description = 'Positive, low energy';
+            } else if (features.pitchVariance > 0.3 && arousal > 0.5) {
+                label = 'Frustrated';
+                description = 'Negative, intense';
+            } else if (features.pauseRatio > 0.5) {
+                label = 'Uncertain';
+                description = 'Hesitant, many pauses';
+            } else {
+                label = 'Neutral';
+                description = 'Balanced';
+            }
+        } else {
+            // Fallback to text-based if no audio
+            const textValence = this.sentimentAnalyzer.analyzeSentiment(text);
+            const textArousal = this.sentimentAnalyzer.analyzeEnergy(text);
+            valence = textValence;
+            arousal = textArousal;
+            // Use text label mapping
+            if (valence > 0.3 && arousal > 0.6) label = 'Excited';
+            else if (valence > 0.3 && arousal <= 0.4) label = 'Calm';
+            else if (valence < -0.3 && arousal > 0.6) label = 'Stressed';
+            else if (valence < -0.3 && arousal <= 0.4) label = 'Sad';
+            else label = 'Neutral';
+        }
         return {
-            valence: Math.max(-1, Math.min(1, combinedValence)),
-            arousal: Math.max(0, Math.min(1, combinedArousal)),
-            emotions: textEmotions,
-            textValence,
-            textArousal,
-            audioArousal,
-            audioValenceHint
+            valence,
+            arousal,
+            label,
+            description
         };
     }
 
@@ -264,14 +307,15 @@ class EmotionInference {
     /**
      * Normalize features for display (0-1 range)
      */
-    normalizeFeatures(audioFeatures) {
-        if (!audioFeatures) return null;
-
+    normalizeFeatures(features) {
+        if (!features) return null;
         return {
-            volume: Math.max(0, Math.min(1, audioFeatures.volume)),
-            pitch: Math.max(0, Math.min(1, audioFeatures.pitch)),
-            speechRate: Math.max(0, Math.min(1, audioFeatures.speechRate)),
-            expressiveness: Math.max(0, Math.min(1, audioFeatures.expressiveness))
+            energy: Math.max(0, Math.min(1, features.energy)),
+            pitchMean: Math.max(0, Math.min(1, features.pitchMean)),
+            pitchVariance: Math.max(0, Math.min(1, features.pitchVariance)),
+            speechRate: Math.max(0, Math.min(1, features.speechRate)),
+            pauseRatio: Math.max(0, Math.min(1, features.pauseRatio)),
+            spectralCentroid: Math.max(0, Math.min(1, features.spectralCentroid))
         };
     }
 }

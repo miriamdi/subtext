@@ -4,6 +4,13 @@
  */
 
 class AudioManager {
+        // Smooth features over a window (moving average)
+        smoothAudioFeatures(windowSize = 10) {
+            if (!this.audioBuffer || this.audioBuffer.length < windowSize) return this.extractAudioFeatures();
+            // Take last N frames
+            const windowFrames = this.audioBuffer.slice(-windowSize);
+            return this.extractAudioFeatures(windowFrames);
+        }
     constructor() {
         this.audioContext = null;
         this.mediaStream = null;
@@ -167,32 +174,90 @@ class AudioManager {
     /**
      * Extract audio features from recorded data
      */
-    extractFeatures(audioData = null) {
-        const data = audioData || this.audioBuffer;
-        
-        if (!data || data.length === 0) {
-            return null;
-        }
+    extractAudioFeatures(audioBuffer = null) {
+        const data = audioBuffer || this.audioBuffer;
+        if (!data || data.length === 0) return null;
 
-        // Calculate RMS energy (volume)
-        const rmsEnergy = this.calculateRMSEnergy(data);
+        // Flatten frames for some calculations
+        const flat = data.flat();
 
-        // Estimate pitch using autocorrelation
-        const pitchEstimate = this.estimatePitch(data);
+        // RMS energy (volume)
+        const energy = Math.min(this.calculateRMSEnergy(data) / 128, 1);
 
-        // Calculate speech rate based on zero crossings
-        const speechRate = this.calculateSpeechRate(data);
+        // Pitch stats
+        const pitchArr = this.getPitchArray(data);
+        const pitchMean = pitchArr.length ? Math.min(this.mean(pitchArr) / 400, 1) : 0;
+        const pitchVariance = pitchArr.length ? Math.min(this.variance(pitchArr) / (400*400), 1) : 0;
 
-        // Calculate pitch variability (expressiveness)
-        const expressiveness = this.calculateExpressiveness(data);
+        // Speech rate
+        const speechRate = Math.min(this.calculateSpeechRate(data) / 300, 1);
 
-        // Normalize values to 0-1 range
+        // Pause ratio (frames with low energy)
+        const pauseRatio = this.calculatePauseRatio(data);
+
+        // Spectral centroid
+        const spectralCentroid = this.calculateSpectralCentroid(data);
+
         return {
-            volume: Math.min(rmsEnergy / 128, 1),         // 0-128 scale, normalize to 0-1
-            pitch: Math.min(pitchEstimate / 400, 1),       // Normalize to 0-1 (typical 80-400Hz)
-            speechRate: Math.min(speechRate / 300, 1),     // Normalize based on typical rates
-            expressiveness: expressiveness                  // Already 0-1
+            energy,
+            pitchMean,
+            pitchVariance,
+            speechRate,
+            pauseRatio,
+            spectralCentroid
         };
+    }
+
+    // Helper: get array of pitch values for each frame
+    getPitchArray(audioData) {
+        const arr = [];
+        for (let i = 0; i < audioData.length; i++) {
+            const pitch = this.estimatePitchFrame(audioData[i]);
+            if (pitch > 0) arr.push(pitch);
+        }
+        return arr;
+    }
+
+    // Helper: mean
+    mean(arr) {
+        return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    // Helper: variance
+    variance(arr) {
+        const m = this.mean(arr);
+        return arr.reduce((sum, n) => sum + Math.pow(n - m, 2), 0) / arr.length;
+    }
+
+    // Helper: pause ratio (frames with low energy)
+    calculatePauseRatio(audioData) {
+        let silent = 0;
+        for (let i = 0; i < audioData.length; i++) {
+            const frame = audioData[i];
+            const rms = Math.sqrt(frame.reduce((sum, v) => sum + Math.pow((v / 128 - 1), 2), 0) / frame.length);
+            if (rms < 0.05) silent++;
+        }
+        return audioData.length ? silent / audioData.length : 0;
+    }
+
+    // Helper: spectral centroid (brightness)
+    calculateSpectralCentroid(audioData) {
+        let totalCentroid = 0;
+        let count = 0;
+        for (let i = 0; i < audioData.length; i++) {
+            const frame = audioData[i];
+            let num = 0, denom = 0;
+            for (let j = 0; j < frame.length; j++) {
+                num += j * frame[j];
+                denom += frame[j];
+            }
+            if (denom > 0) {
+                // Normalize centroid to 0-1 (max bin = frame.length)
+                totalCentroid += (num / denom) / frame.length;
+                count++;
+            }
+        }
+        return count ? Math.min(totalCentroid / count, 1) : 0;
     }
 
     /**

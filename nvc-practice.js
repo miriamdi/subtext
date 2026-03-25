@@ -53,10 +53,19 @@ class NVCPractice {
      * Attach event listeners
      */
     attachEventListeners() {
-        this.practiceBtn.addEventListener('click', () => this.analyzeExpression());
-        this.clearResultsBtn.addEventListener('click', () => this.clearResults());
-        this.copyBtn.addEventListener('click', () => this.copyToClipboard());
-        this.downloadBtn.addEventListener('click', () => this.downloadAsText());
+
+        if (this.practiceBtn) {
+            this.practiceBtn.addEventListener('click', () => this.analyzeExpression());
+        }
+        if (this.clearResultsBtn) {
+            this.clearResultsBtn.addEventListener('click', () => this.clearResults());
+        }
+        if (this.copyBtn) {
+            this.copyBtn.addEventListener('click', () => this.copyToClipboard());
+        }
+        if (this.downloadBtn) {
+            this.downloadBtn.addEventListener('click', () => this.downloadAsText());
+        }
 
         if (this.sendBtn) {
             this.sendBtn.addEventListener('click', () => this.handleSendMessage());
@@ -126,7 +135,6 @@ class NVCPractice {
      */
     async analyzeExpression() {
         const text = this.practiceInput.value.trim();
-
         if (!text) {
             this.showError('Please enter some text to practice with.');
             return;
@@ -135,8 +143,24 @@ class NVCPractice {
         this.practiceBtn.disabled = true;
         this.loadingSpinner.style.display = 'inline-flex';
 
+        // Display user input in the chat area (if available)
+        if (this.chatContainer) {
+            this.renderMessage('user', text);
+        }
+
         try {
-            // Use local NVC framework
+            // Build prompt for Hugging Face
+            const prompt = this.buildNVCPrompt(text);
+            // Call Hugging Face API
+            const aiResponse = await this.callHuggingFace(prompt);
+
+            // Display AI response in chat area (if available)
+            if (this.chatContainer && aiResponse) {
+                this.renderMessage('assistant', aiResponse);
+            }
+
+            // Optionally, display the result in the results panel as well
+            // Use local NVC framework for structured fields
             const result = this.nvc.generateNVC(text);
             this.displayResults(result);
         } catch (error) {
@@ -173,35 +197,30 @@ class NVCPractice {
      * Call Hugging Face free inference API
      */
     async callHuggingFace(prompt) {
+        // Always build the prompt string (in case prompt is just user text)
+        const fullPrompt = this.buildNVCPrompt(prompt);
         const url = 'https://api-inference.huggingface.co/models/google/flan-t5-large';
-
         try {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ inputs: prompt }),
+                body: JSON.stringify({ inputs: fullPrompt }),
             });
-
             if (!response.ok) {
                 throw new Error(`Hugging Face API error ${response.status}`);
             }
-
             const data = await response.json();
-
             // Data shape may vary; for text generation models, first element may contain generated_text
             if (Array.isArray(data)) {
-                // find first object with text-like field
                 const first = data[0];
                 if (first?.generated_text) return first.generated_text;
                 if (typeof first?.text === 'string') return first.text;
                 if (typeof first === 'string') return first;
             }
-
             if (typeof data?.generated_text === 'string') return data.generated_text;
             if (typeof data?.text === 'string') return data.text;
-
             return null;
         } catch (error) {
             console.warn('Hugging Face call failed:', error);
