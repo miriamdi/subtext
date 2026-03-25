@@ -20,35 +20,46 @@
         </header>
 
         <main>
-            <!-- Audio Recording Section -->
-            <section class="panel audio-panel">
-                <h2>Audio Input</h2>
-                <div class="audio-controls">
-                    <button id="recordBtn" class="btn btn-primary">
-                        <span class="icon">🎙️</span> Start Recording
-                    </button>
-                    <button id="stopBtn" class="btn btn-danger" disabled>Stop Recording</button>
+            <!-- Modern Chat Input Section -->
+            <section class="panel chat-input-panel">
+                <div class="chat-prompt">
+                    <h2 id="chatPrompt">How do you feel?</h2>
                 </div>
-                <div class="recording-status">
-                    <span id="recordingTime" class="status-text" style="display:none;">Recording: <span id="timer">0:00</span></span>
-                    <span id="recordingComplete" class="status-text success" style="display:none;">✓ Audio captured</span>
-                </div>
-                <div class="speech-hint">
-                    <small>🎙️ <em>Speaking automatically converted to text below...</em></small>
-                </div>
-            </section>
+                
+                <div class="input-container">
+                    <!-- First Row: Text Input + Record Button -->
+                    <div class="input-row-first">
+                        <div class="input-option text-input-section">
+                            <textarea 
+                                id="textInput" 
+                                class="modern-textarea"
+                                placeholder="Share what's on your mind..."
+                                rows="5"
+                            ></textarea>
+                        </div>
 
-            <!-- Text Input Section -->
-            <section class="panel text-panel">
-                <h2>Text Input</h2>
-                <textarea 
-                    id="textInput" 
-                    class="textarea"
-                    placeholder="Enter what's on your mind... (can use with or without audio)"
-                    rows="6"
-                ></textarea>
-                <div class="text-hint">
-                    <small>💡 Tip: Be as honest and detailed as you want</small>
+                        <button id="recordBtn" class="input-method-btn record-method" title="Record audio">
+                            <span class="method-icon">🎙️</span>
+                            <span class="method-label">Record</span>
+                        </button>
+                    </div>
+
+                    <!-- Second Row: Analyze Button (Full Width) -->
+                    <button id="analyzeBtn" class="btn btn-analyze-full" title="Analyze & Interpret">
+                        <span class="method-icon">✨</span>
+                        <span class="method-label">Analyze</span>
+                    </button>
+
+                    <!-- Recording Status (compact) -->
+                    <div id="recordingStatus" class="recording-badge" style="display:none;">
+                        <span id="recordingTime" class="recording-indicator">🎙️ Recording: <span id="timer">0:00</span></span>
+                        <button id="stopBtn" class="btn-stop-recording">Stop</button>
+                    </div>
+
+                    <!-- Audio Captured Status -->
+                    <div id="recordingComplete" class="success-badge" style="display:none;">
+                        ✓ Audio captured
+                    </div>
                 </div>
             </section>
 
@@ -69,16 +80,6 @@
                     </div>
                 </div>
             </section>
-
-            <!-- Analyze Button -->
-            <div class="action-section" style="gap:0.75rem; flex-wrap: wrap;">
-                <button id="analyzeBtn" class="btn btn-analyze">
-                    <span class="icon">✨</span> Analyze & Interpret
-                </button>
-                <button id="toggleNvcBtn" class="btn btn-secondary" style="display:none;">
-                    <span class="icon">🦒</span> Open NVC Interpreter
-                </button>
-            </div>
 
             <!-- Audio Features Visualization -->
             <section class="panel features-panel" id="featuresPanel" style="display:none;">
@@ -117,16 +118,31 @@
 
             <!-- Emotion Indicators -->
             <section class="panel emotion-panel" id="emotionPanel" style="display:none;">
-                <h2>Emotional State</h2>
+                <div class="emotion-header">
+                    <h2>Emotional State</h2>
+                    <button class="emotion-info-btn" id="emotionInfoBtn" title="Learn about the Emotional Model">
+                        <span class="info-icon">ℹ️</span>
+                    </button>
+                </div>
+
+                <!-- Current Emotion Label Row -->
+                <div class="emotion-label-row">
+                    <span class="label">Current Emotion:</span>
+                    <span class="value emotion-label" id="emotionLabel">—</span>
+                </div>
+
                 <div class="emotion-2d">
-                    <div class="emotion-axes">
+                    <div class="emotion-axes-wrapper" style="position: relative; display: inline-block;">
                         <div class="axis-label axis-label-left">Negative</div>
                         <div class="axis-label axis-label-right">Positive</div>
                         <div class="axis-label axis-label-bottom">Low Energy</div>
                         <div class="axis-label axis-label-top">High Energy</div>
-                        <div class="emotion-point" id="emotionPoint"></div>
+                        <div class="emotion-axes">
+                            <div class="emotion-point" id="emotionPoint"></div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="emotion-values">
                     <div class="emotion-value">
                         <span class="label">Valence (Sentiment):</span>
@@ -138,6 +154,13 @@
                     </div>
                 </div>
             </section>
+
+            <!-- NVC Interpreter Button -->
+            <div class="action-section-nvc" style="display:none;" id="nvcToggleSection">
+                <button id="toggleNvcBtn" class="btn btn-nvc-action">
+                    <span class="icon">🦒</span> Open NVC Interpreter
+                </button>
+            </div>
 
             <!-- NVC Results Section -->
             <section class="panel results-panel" id="resultsPanel" style="display:none;">
@@ -234,6 +257,16 @@
         </div>
     </div>
 
+    <!-- Emotion Information Modal -->
+    <div id="emotionInfoModal" class="modal" style="display:none;">
+        <div class="modal-content explanation-modal">
+            <button class="modal-close" id="closeEmotionInfo">×</button>
+            <div id="emotionInfoContent">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
     <!-- Reference Page Modal -->
     <div id="referenceModal" class="modal" style="display:none;">
         <div class="modal-content reference-modal">
@@ -277,6 +310,7 @@
     <script src="pipeline.js"></script>
     <script src="translation.js"></script>
     <script src="reference.js"></script>
+    <script src="emotion-utils.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

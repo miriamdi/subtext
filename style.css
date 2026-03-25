@@ -3,7 +3,7 @@
    ========================= */
 
 :root {
-    --primary-color: #65096d;
+    --primary-color: #095c6d;
     --primary-light: #ca10a2;
     --primary-dark: #17725a;
     --secondary-color: #4FD1C5;    /* soft turquoise (less neon than before) */
@@ -196,6 +196,236 @@ footer {
 }
 
 /* =========================
+   Modern Input UI
+   ========================= */
+
+.chat-input-panel {
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--bg-card) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.chat-prompt {
+    text-align: center;
+    animation: fadeInDown 0.5s ease;
+}
+
+.chat-prompt h2 {
+    font-size: 1.8rem;
+    margin: 0;
+    color: var(--primary-color);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.text-input-section {
+    flex: 1;
+}
+
+.modern-textarea {
+    width: 100%;
+    padding: 1.25rem;
+    border: 2px solid var(--border-light);
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: vertical;
+    transition: var(--transition);
+    color: var(--text-primary);
+    background: white;
+    min-height: 140px;
+}
+
+.modern-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(101, 9, 109, 0.08);
+    background: rgba(255, 255, 255, 1);
+}
+
+.modern-textarea::placeholder {
+    color: var(--text-light);
+    font-weight: 400;
+}
+
+/* Input controls - clear buttons for text vs record */
+.input-controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+/* First row: text input + record button */
+.input-row-first {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.input-row-first .text-input-section {
+    flex: 1;
+}
+
+.input-row-first .record-method {
+    flex: 0;
+    max-width: 160px;
+    padding: 1rem 1.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.input-method-btn {
+    flex: 1;
+    max-width: 160px;
+    padding: 1rem 1.5rem;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: white;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-method-btn:hover {
+    border-color: var(--primary-color);
+    background: var(--bg-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(101, 9, 109, 0.1);
+}
+
+.input-method-btn:active {
+    transform: translateY(0);
+}
+
+.input-method-btn.send-method {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+}
+
+.input-method-btn.send-method:hover {
+    box-shadow: 0 6px 20px rgba(101, 9, 109, 0.2);
+}
+
+.input-method-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.method-icon {
+    font-size: 1.75rem;
+}
+
+.method-label {
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+/* Recording Status Badge */
+.recording-badge {
+    background: linear-gradient(135deg, #FEE 0%, #FEF 100%);
+    border: 2px solid var(--danger-color);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    animation: slideUp 0.3s ease;
+}
+
+.recording-indicator {
+    font-weight: 600;
+    color: var(--danger-color);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#timer {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    min-width: 50px;
+}
+
+.btn-stop-recording {
+    padding: 0.6rem 1.2rem;
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-stop-recording:hover {
+    background: #E53E3E;
+    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+}
+
+/* Success Badge */
+.success-badge {
+    background: linear-gradient(135deg, #E8F9F5 0%, #E8F9F0 100%);
+    border: 2px solid var(--success-color);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    color: var(--success-color);
+    font-weight: 600;
+    font-size: 0.95rem;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =========================
    Buttons
    ========================= */
 
@@ -262,6 +492,72 @@ footer {
 
 .btn-analyze:active:not(:disabled) {
     transform: translateY(0);
+}
+
+/* Full-width analyze button for second row */
+.btn-analyze-full {
+    width: 100%;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    font-size: 1rem;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+}
+
+.btn-analyze-full:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(101, 9, 109, 0.2);
+}
+
+.btn-analyze-full:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-analyze-full:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* NVC Interpreter Action Button - Similar to Analyze button */
+.btn-nvc-action {
+    width: 100%;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    font-size: 1rem;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+}
+
+.btn-nvc-action:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(101, 9, 109, 0.2);
+}
+
+.btn-nvc-action:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-nvc-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .btn-secondary {
@@ -336,27 +632,49 @@ footer {
     margin-bottom: 2rem;
     display: flex;
     justify-content: center;
+    padding: 40px 60px;
+    overflow: visible;
+}
+
+.emotion-axes-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 300px;
+    height: 300px;
 }
 
 .emotion-axes {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 300px;
     height: 300px;
     border: 2px solid var(--border-color);
     border-radius: 8px;
-    background: linear-gradient(135deg, 
-        rgba(239, 68, 68, 0.05) 0%, 
-        rgba(245, 158, 11, 0.05) 25%,
-        rgba(16, 185, 129, 0.05) 50%,
-        rgba(99, 102, 241, 0.05) 100%);
+    background-image: 
+        linear-gradient(90deg, transparent 49%, var(--border-light) 49%, var(--border-light) 51%, transparent 51%),
+        linear-gradient(180deg, transparent 49%, var(--border-light) 49%, var(--border-light) 51%, transparent 51%),
+        linear-gradient(135deg, 
+            rgba(239, 68, 68, 0.05) 0%, 
+            rgba(245, 158, 11, 0.05) 25%,
+            rgba(16, 185, 129, 0.05) 50%,
+            rgba(99, 102, 241, 0.05) 100%);
+    background-size: 100% 100%, 100% 100%, 100% 100%;
+    background-position: 0 0, 0 0, 0 0;
+    background-repeat: no-repeat;
+    overflow: visible;
+    z-index: 1;
 }
 
 .axis-label {
     position: absolute;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-light);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary-color);
     text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    z-index: 2;
 }
 
 .axis-label-left {
@@ -370,39 +688,44 @@ footer {
     right: -60px;
     top: 50%;
     transform: translateY(-50%);
+    text-align: left;
 }
 
 .axis-label-bottom {
-    bottom: -40px;
+    bottom: -30px;
     left: 50%;
     transform: translateX(-50%);
+    text-align: center;
 }
 
 .axis-label-top {
-    top: -40px;
+    top: -30px;
     left: 50%;
     transform: translateX(-50%);
+    text-align: center;
 }
 
 /* Center cross */
 .emotion-axes::before {
     content: '';
     position: absolute;
-    width: 2px;
+    width: 3px;
     height: 100%;
     left: 50%;
     top: 0;
-    background: var(--border-light);
+    background: var(--border-color);
+    transform: translateX(-50%);
 }
 
 .emotion-axes::after {
     content: '';
     position: absolute;
-    height: 2px;
+    height: 3px;
     width: 100%;
     top: 50%;
     left: 0;
-    background: var(--border-light);
+    background: var(--border-color);
+    transform: translateY(-50%);
 }
 
 .emotion-point {
@@ -422,7 +745,7 @@ footer {
 
 .emotion-values {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
 }
 
@@ -444,6 +767,114 @@ footer {
     font-weight: 600;
     color: var(--primary-color);
     font-size: 1.1rem;
+}
+
+/* Current Emotion Label Row */
+.emotion-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
+    border: 2px solid rgba(99, 102, 241, 0.2);
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+}
+
+.emotion-label-row .label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.emotion-label-row .value {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+/* Emotion header with info button */
+.emotion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.emotion-header h2 {
+    margin: 0;
+}
+
+.emotion-info-btn {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: var(--transition);
+    color: var(--text-light);
+}
+
+.emotion-info-btn:hover {
+    background: var(--bg-hover);
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.emotion-info-btn .info-icon {
+    display: inline-block;
+}
+
+
+.emotion-label {
+    font-size: 1.3rem;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+/* Quadrant labels in the emotion graph */
+.quadrant-label {
+    position: absolute;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.6;
+    z-index: 1;
+}
+
+.quadrant-excited {
+    top: 12px;
+    right: 12px;
+}
+
+.quadrant-tense {
+    top: 12px;
+    left: 12px;
+}
+
+.quadrant-low {
+    bottom: 12px;
+    left: 12px;
+}
+
+.quadrant-calm {
+    bottom: 12px;
+    right: 12px;
+}
+
+/* Optional: Add subtle quadrant background colors */
+.emotion-axes {
+    background: 
+        linear-gradient(to bottom right, 
+            rgba(239, 68, 68, 0.03) 0%,      /* Top-left: red for tense */
+            rgba(245, 158, 11, 0.03) 25%,    /* Top-right: orange for excited */
+            rgba(16, 185, 129, 0.03) 50%,    /* Bottom-right: green for calm */
+            rgba(59, 130, 246, 0.03) 75%,    /* Bottom-left: blue for low */
+            rgba(99, 102, 241, 0.03) 100%);
+    overflow: hidden;
 }
 
 /* =========================
@@ -846,6 +1277,70 @@ footer {
     content: '✓ Try this: ';
     font-weight: 600;
     color: var(--success-color);
+}
+
+/* Emotion Info Modal Styling */
+#emotionInfoContent .explanation-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+#emotionInfoContent .explanation-icon {
+    font-size: 1.8rem;
+}
+
+#emotionInfoContent .explanation-section {
+    margin-bottom: 1.5rem;
+}
+
+#emotionInfoContent .section-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+#emotionInfoContent .subsection-label {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+#emotionInfoContent .section-content {
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 0.5rem;
+}
+
+#emotionInfoContent .text-muted {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+#emotionInfoContent .example {
+    padding: 1rem;
+    border-radius: 6px;
+    margin: 0.75rem 0;
+    font-size: 0.95rem;
+    border-left: 4px solid var(--primary-color);
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, transparent 100%);
+}
+
+#emotionInfoContent .example strong {
+    color: var(--primary-color);
+}
+
+#emotionInfoContent .example em {
+    color: var(--text-secondary);
+    display: block;
+    margin-top: 0.25rem;
+    font-style: italic;
 }
 
 /* =========================

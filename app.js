@@ -17,6 +17,14 @@ class SubtextApp {
         // NVC interpreter UI state
         this.nvcPanelOpen = false;
 
+        // Chat prompts for rotating display
+        this.chatPrompts = [
+            "How do you feel?",
+            "What's up?",
+            "What happened?"
+        ];
+        this.currentPromptIndex = 0;
+
         // Initialize the processing pipeline
         this.pipeline = new SubtextPipeline();
 
@@ -26,17 +34,22 @@ class SubtextApp {
 
         this.initializeElements();
         this.attachEventListeners();
+        this.rotatePrompt();
     }
 
     /**
      * Initialize DOM element references
      */
     initializeElements() {
+        // Chat prompt
+        this.chatPrompt = document.getElementById('chatPrompt');
+
         // Audio controls
         this.recordBtn = document.getElementById('recordBtn');
         this.stopBtn = document.getElementById('stopBtn');
         this.recordingTime = document.getElementById('recordingTime');
         this.recordingComplete = document.getElementById('recordingComplete');
+        this.recordingStatus = document.getElementById('recordingStatus');
         this.timer = document.getElementById('timer');
 
         // Text input
@@ -64,6 +77,8 @@ class SubtextApp {
         // Emotion panel
         this.emotionPanel = document.getElementById('emotionPanel');
         this.emotionPoint = document.getElementById('emotionPoint');
+        this.emotionLabel = document.getElementById('emotionLabel');
+        this.emotionInfoBtn = document.getElementById('emotionInfoBtn');
         this.valenceValue = document.getElementById('valenceValue');
         this.arousalValue = document.getElementById('arousalValue');
 
@@ -74,10 +89,29 @@ class SubtextApp {
         this.nvcNeed = document.getElementById('nvcNeed');
         this.nvcRequest = document.getElementById('nvcRequest');
         this.toggleNvcBtn = document.getElementById('toggleNvcBtn');
+        this.nvcToggleSection = document.getElementById('nvcToggleSection');
 
         // Clear button
         this.clearSection = document.getElementById('clearSection');
         this.clearBtn = document.getElementById('clearBtn');
+    }
+
+    /**
+     * Rotate through chat prompts
+     */
+    rotatePrompt() {
+        if (!this.chatPrompt) return;
+
+        this.chatPrompt.textContent = this.chatPrompts[this.currentPromptIndex];
+        this.currentPromptIndex = (this.currentPromptIndex + 1) % this.chatPrompts.length;
+
+        // Rotate every 5 seconds
+        setInterval(() => {
+            if (this.chatPrompt) {
+                this.chatPrompt.textContent = this.chatPrompts[this.currentPromptIndex];
+                this.currentPromptIndex = (this.currentPromptIndex + 1) % this.chatPrompts.length;
+            }
+        }, 5000);
     }
 
     /**
@@ -132,6 +166,7 @@ class SubtextApp {
         // Initialize explanation and reference features
         this.initializeExplanationFeatures();
         this.initializeInteractiveReferenceGuide();
+        this.initializeEmotionInfoModal();
     }
 
     /**
@@ -143,6 +178,8 @@ class SubtextApp {
         if (success) {
             this.recordBtn.disabled = true;
             this.stopBtn.disabled = false;
+            this.stopBtn.style.display = 'inline-block';
+            this.recordingStatus.style.display = 'flex';
             this.recordingTime.style.display = 'inline';
             this.recordingComplete.style.display = 'none';
             this.analyzeBtn.disabled = true;
@@ -168,6 +205,7 @@ class SubtextApp {
 
         this.recordBtn.disabled = false;
         this.stopBtn.disabled = true;
+        this.stopBtn.style.display = 'none';
         this.recordingTime.style.display = 'none';
         this.recordingComplete.style.display = 'inline';
         this.analyzeBtn.disabled = false;
@@ -325,7 +363,7 @@ class SubtextApp {
         } finally {
             // Re-enable button
             this.analyzeBtn.disabled = false;
-            this.analyzeBtn.textContent = '✨ Analyze & Interpret';
+            this.analyzeBtn.textContent = '✨ Analyze';
         }
     }
 
@@ -359,12 +397,22 @@ class SubtextApp {
     displayEmotionState() {
         const { valence, arousal } = this.emotion;
 
+        // Compute dominance from audio features and text
+        const dominance = EmotionUtils.computeDominance(this.audioFeatures, this.analyzedText);
+
+        // Map to discrete emotion label
+        const emotionData = EmotionUtils.mapToEmotion(valence, arousal, dominance);
+
         // Position on 2D plane (300x300, centered at 150,150)
         const x = 150 + (valence * 150); // valence: -1 to 1 → 0 to 300
         const y = 150 - (arousal * 150); // arousal: 0 to 1 → 150 to 0 (inverted for display)
 
         this.emotionPoint.style.left = x + 'px';
         this.emotionPoint.style.top = y + 'px';
+
+        // Display emotion label
+        this.emotionLabel.textContent = emotionData.label;
+        this.emotionLabel.style.color = EmotionUtils.getEmotionColor(emotionData.category);
 
         // Display values
         const valenceLabel = valence > 0 ? 'Positive' : valence < 0 ? 'Negative' : 'Neutral';
@@ -377,7 +425,10 @@ class SubtextApp {
 
         console.log('Emotion State:', {
             valence: valence.toFixed(2),
-            arousal: arousal.toFixed(2)
+            arousal: arousal.toFixed(2),
+            dominance: dominance.toFixed(0),
+            label: emotionData.label,
+            category: emotionData.category
         });
     }
 
@@ -396,8 +447,8 @@ class SubtextApp {
         this.updateNVCFieldHints();
 
         // Set up toggle control for NVC interpreter UI
-        if (this.toggleNvcBtn) {
-            this.toggleNvcBtn.style.display = 'inline-flex';
+        if (this.toggleNvcBtn && this.nvcToggleSection) {
+            this.nvcToggleSection.style.display = 'flex';
             this.toggleNvcBtn.textContent = this.nvcPanelOpen ? '🦒 Close NVC Interpreter' : '🦒 Open NVC Interpreter';
         }
 
@@ -542,7 +593,9 @@ class SubtextApp {
      * Show clear/reset button
      */
     displayClearButton() {
-        this.clearSection.style.display = 'block';
+        if (this.clearSection) {
+            this.clearSection.style.display = 'block';
+        }
     }
 
     /**
@@ -557,8 +610,10 @@ class SubtextApp {
         this.featuresPanel.style.display = 'none';
         this.emotionPanel.style.display = 'none';
         this.resultsPanel.style.display = 'none';
+        this.recordingStatus.style.display = 'none';
         this.translationPanel.style.display = 'none';
         this.clearSection.style.display = 'none';
+        this.nvcToggleSection.style.display = 'none';
         this.recordingComplete.style.display = 'none';
         this.recordingTime.style.display = 'none';
 
@@ -1039,6 +1094,127 @@ class SubtextApp {
             selectedItem.style.paddingLeft = 'calc(0.75rem - 4px)';
             selectedItem.style.backgroundColor = 'rgba(99, 102, 241, 0.1)';
         }
+    }
+
+    /**
+     * Initialize emotion information modal
+     */
+    initializeEmotionInfoModal() {
+        this.emotionInfoModal = document.getElementById('emotionInfoModal');
+        const closeEmotionInfoBtn = document.getElementById('closeEmotionInfo');
+
+        if (!this.emotionInfoBtn || !this.emotionInfoModal) {
+            console.warn('Emotion info modal elements not found');
+            return;
+        }
+
+        // Show modal when info button is clicked
+        this.emotionInfoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showEmotionInfo();
+        });
+
+        // Close button
+        closeEmotionInfoBtn.addEventListener('click', () => this.closeEmotionInfo());
+
+        // Close on background click
+        this.emotionInfoModal.addEventListener('click', (e) => {
+            if (e.target === this.emotionInfoModal) {
+                this.closeEmotionInfo();
+            }
+        });
+
+        console.log('Emotion info modal initialized');
+    }
+
+    /**
+     * Show emotion information modal
+     */
+    showEmotionInfo() {
+        const emotionInfoContent = document.getElementById('emotionInfoContent');
+
+        const html = `
+            <div class="explanation-title">
+                <span class="explanation-icon">😊</span>
+                <span>Understanding Your Emotional State</span>
+            </div>
+
+            <div class="explanation-section">
+                <div class="section-label">Russell's Circumplex Model</div>
+                <p class="section-content">
+                    Your emotional state is mapped on a 2D space based on two dimensions:
+                </p>
+            </div>
+
+            <div class="explanation-section">
+                <div class="subsection-label"><strong>Valence (Positive ↔ Negative)</strong></div>
+                <p class="section-content">
+                    How positive or negative the emotion is.<br/>
+                    <span class="text-muted">• Positive: Happiness, joy, contentment, excitement</span><br/>
+                    <span class="text-muted">• Negative: Sadness, anger, frustration, anxiety</span>
+                </p>
+            </div>
+
+            <div class="explanation-section">
+                <div class="subsection-label"><strong>Arousal (Low Energy ↔ High Energy)</strong></div>
+                <p class="section-content">
+                    How energized or calm you feel.<br/>
+                    <span class="text-muted">• High Energy: Alert, excited, tense, active</span><br/>
+                    <span class="text-muted">• Low Energy: Calm, peaceful, tired, relaxed</span>
+                </p>
+            </div>
+
+            <div class="explanation-section">
+                <div class="section-label">Emotion Quadrants</div>
+                <div class="example">
+                    <strong>📍 Top-Right (Excited):</strong> Positive + High Energy<br/>
+                    <em>Example: Joy, excitement, enthusiasm, confidence</em>
+                </div>
+                <div class="example">
+                    <strong>📍 Top-Left (Tense):</strong> Negative + High Energy<br/>
+                    <em>Example: Anger, frustration, anxiety, tension</em>
+                </div>
+                <div class="example">
+                    <strong>📍 Bottom-Left (Low):</strong> Negative + Low Energy<br/>
+                    <em>Example: Sadness, melancholy, despair, resignation</em>
+                </div>
+                <div class="example">
+                    <strong>📍 Bottom-Right (Calm):</strong> Positive + Low Energy<br/>
+                    <em>Example: Calmness, contentment, serenity, peace</em>
+                </div>
+            </div>
+
+            <div class="explanation-section">
+                <div class="section-label">How Emotions Are Detected</div>
+                <p class="section-content">
+                    Subtext analyzes both audio features (tone, pace, pitch, volume) and text content 
+                    to infer your emotional state. This allows for deeper understanding of what's 
+                    really being communicated beyond just the words.
+                </p>
+            </div>
+
+            <div class="explanation-section">
+                <div class="section-label">Why Emotions Matter</div>
+                <p class="section-content">
+                    Understanding emotions is key to Nonviolent Communication (NVC). Behind every 
+                    emotion lies an unmet need. By recognizing what you're feeling, you can better 
+                    identify what you truly need and communicate it clearly to others.
+                </p>
+            </div>
+        `;
+
+        emotionInfoContent.innerHTML = html;
+
+        this.emotionInfoModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    /**
+     * Close emotion information modal
+     */
+    closeEmotionInfo() {
+        this.emotionInfoModal.style.display = 'none';
+        document.body.style.overflow = '';
     }
 }
 

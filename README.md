@@ -120,7 +120,7 @@ subtext-site/
    - Be honest and detailed
 
 3. **Analyze**:
-   - Click "Analyze & Interpret"
+   - Click "Analyze"
    - View audio features (if recorded)
    - See emotion state on 2D plane
    - Read NVC-formatted response
