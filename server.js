@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const HF_TOKEN = 'YOUR_HF_API_KEY'; // Replace with your Hugging Face API key
+const HF_TOKEN = process.env.HF_API_KEY; 
 
 app.post('/chat', async (req, res) => {
   const { message } = req.body;
