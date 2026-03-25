@@ -43,13 +43,7 @@
                         </div>
                     </div>
 
-                    <!-- Second Row: Analyze Button (Full Width) -->
-                    <button id="analyzeBtn" class="btn btn-analyze-full" title="Analyze & Interpret">
-                        <span class="method-icon">✨</span>
-                        <span class="method-label">Analyze</span>
-                    </button>
-
-                    <!-- Recording Status (compact) -->
+                    <!-- Recording Status (compact, red row, only visible during recording) -->
                     <div id="recordingStatus" class="recording-badge" style="display:none;">
                         <span id="recordingTime" class="recording-indicator">🎙️ Recording: <span id="timer">0:00</span></span>
                         <button id="stopBtn" class="btn-stop-recording">Stop</button>
@@ -59,6 +53,12 @@
                     <div id="recordingComplete" class="success-badge" style="display:none;">
                         ✓ Audio captured
                     </div>
+
+                    <!-- Analyze Button (Full Width) at the end, now after audio captured -->
+                    <button id="analyzeBtn" class="btn btn-analyze-full" title="Analyze & Interpret">
+                        <span class="method-icon">✨</span>
+                        <span class="method-label">Analyze</span>
+                    </button>
                 </div>
             </section>
 
@@ -311,5 +311,77 @@
     <script src="reference.js"></script>
     <script src="emotion-utils.js"></script>
     <script src="app.js"></script>
+        <!-- Audio Recording and Feature Extraction Integration -->
+        <script>
+        // --- Modern Audio Recording and Feature Extraction Integration ---
+        let mediaRecorder, audioChunks = [];
+        const recordBtn = document.getElementById('recordBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const recordingStatus = document.getElementById('recordingStatus');
+        const recordingComplete = document.getElementById('recordingComplete');
+        let lastAudioBlob = null;
+
+        if (recordBtn && stopBtn) {
+            recordBtn.onclick = () => {
+                audioChunks = [];
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        lastAudioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        recordingStatus.style.display = 'none';
+                        recordingComplete.style.display = 'block';
+                    };
+                    mediaRecorder.start();
+                    recordBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    recordingStatus.style.display = 'flex';
+                    recordingComplete.style.display = 'none';
+                }).catch(err => {
+                    alert('Microphone error: ' + err);
+                });
+            };
+            stopBtn.onclick = () => {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    recordBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+            };
+        }
+
+        // --- Analyze Button: Send WAV to Flask and integrate features ---
+        if (analyzeBtn) {
+            analyzeBtn.addEventListener('click', () => {
+                if (!lastAudioBlob) {
+                    alert('Please record audio before analyzing.');
+                    return;
+                }
+                const formData = new FormData();
+                formData.append('audio', lastAudioBlob, 'recording.wav');
+                fetch('http://localhost:5000/extract_features', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error('Server error: ' + res.status);
+                    return res.json();
+                })
+                .then(features => {
+                    // Integrate with your pipeline here
+                    if (typeof analyzeEmotionWithFeatures === 'function') {
+                        analyzeEmotionWithFeatures(features);
+                    } else {
+                        console.log('Extracted features:', features);
+                        alert('Features extracted! Check console.');
+                    }
+                })
+                .catch(err => {
+                    alert('Error extracting features: ' + err);
+                });
+            });
+        }
+        </script>
 </body>
 </html>

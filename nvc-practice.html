@@ -127,7 +127,12 @@
 
             <!-- Tips Section -->
             <section class="panel tips-panel">
-                <h2>💡 NVC Tips</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                    <h2 style="margin-bottom: 0;">💡 NVC Tips</h2>
+                    <button id="referenceBtn" class="btn btn-reference" title="Open Needs & Feelings reference">
+                        <span class="icon">📚</span> Reference Guide
+                    </button>
+                </div>
                 <div class="tips-grid">
                     <div class="tip-item">
                         <h4>🎯 Observation</h4>
@@ -164,6 +169,38 @@
         </div>
     </div>
 
+    <!-- Reference Page Modal (copied from index.html) -->
+    <div id="referenceModal" class="modal" style="display:none;">
+        <div class="modal-content reference-modal">
+            <button class="modal-close" id="closeReference">×</button>
+            <h2>NVC Reference Guide</h2>
+            <div class="reference-tabs">
+                <button class="reference-tab-btn active" data-tab="feelings">Feelings & Emotions</button>
+                <button class="reference-tab-btn" data-tab="needs">Needs & Values</button>
+            </div>
+            <div class="reference-content">
+                <!-- Feelings Tab -->
+                <div id="feelingsTab" class="reference-section active">
+                    <div class="search-box">
+                        <input type="text" id="feelingsSearch" placeholder="Search feelings..." class="search-input">
+                    </div>
+                    <div id="feelingsContainer" class="reference-categories">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                <!-- Needs Tab -->
+                <div id="needsTab" class="reference-section">
+                    <div class="search-box">
+                        <input type="text" id="needsSearch" placeholder="Search needs..." class="search-input">
+                    </div>
+                    <div id="needsContainer" class="reference-categories">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Error Alert -->
     <div id="errorAlert" class="alert alert-error" style="display: none;">
         <span id="errorMessage"></span>
@@ -178,6 +215,7 @@
 
     <!-- Scripts -->
         <script src="nvc.js"></script>
+        <script src="reference.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 new NVCPractice();

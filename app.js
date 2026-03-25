@@ -207,6 +207,8 @@ class SubtextApp {
         this.stopBtn.disabled = true;
         this.stopBtn.style.display = 'none';
         this.recordingTime.style.display = 'none';
+        // Always hide the red recording status row after stopping
+        this.recordingStatus.style.display = 'none';
         this.recordingComplete.style.display = 'inline';
         this.analyzeBtn.disabled = false;
 

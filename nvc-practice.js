@@ -199,20 +199,17 @@ class NVCPractice {
     async callHuggingFace(prompt) {
         // Always build the prompt string (in case prompt is just user text)
         const fullPrompt = this.buildNVCPrompt(prompt);
-        const url = 'https://api-inference.huggingface.co/models/google/flan-t5-large';
+        // Use your deployed proxy server URL in production
+        const url = 'https://your-proxy-server.com/chat'; // or 'http://localhost:5000/chat' for local dev
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ inputs: fullPrompt }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: fullPrompt })
             });
-            if (!response.ok) {
-                throw new Error(`Hugging Face API error ${response.status}`);
-            }
+            if (!response.ok) throw new Error('Proxy server error');
             const data = await response.json();
-            // Data shape may vary; for text generation models, first element may contain generated_text
+            // Hugging Face returns an array or object
             if (Array.isArray(data)) {
                 const first = data[0];
                 if (first?.generated_text) return first.generated_text;
@@ -223,7 +220,7 @@ class NVCPractice {
             if (typeof data?.text === 'string') return data.text;
             return null;
         } catch (error) {
-            console.warn('Hugging Face call failed:', error);
+            console.warn('Proxy/Hugging Face call failed:', error);
             return null;
         }
     }
