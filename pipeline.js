@@ -53,12 +53,30 @@ class SubtextPipeline {
      * @param {string} userText - User's original text input (not transcribed speech)
      * @returns {object} - Structured, editable NVC framework
      */
-    transformToNVC(userText) {
+    async transformToNVC(userText) {
         console.log('[Pipeline] Stage 2: Transforming to NVC structure...');
-        
-        // Process the user text through NVC framework
-        this.nvcOutput = this.nvc.process(userText);
-        
+
+        let nvcOutput;
+
+        if (typeof extractNVCWithFallback === 'function') {
+            try {
+                nvcOutput = await extractNVCWithFallback(userText);
+                console.log('Using LLM NVC:', nvcOutput);
+
+                if (!isValidNVC(nvcOutput)) {
+                    console.warn('[Pipeline] LLM NVC invalid, falling back to rule-based NVCFramework', nvcOutput);
+                    nvcOutput = this.nvc.process(userText);
+                }
+            } catch (error) {
+                console.error('[Pipeline] LLM NVC extraction failed, falling back to rule-based NVCFramework', error);
+                nvcOutput = this.nvc.process(userText);
+            }
+        } else {
+            console.warn('[Pipeline] extractNVCWithFallback not available, using rule-based NVCFramework');
+            nvcOutput = this.nvc.process(userText);
+        }
+
+        this.nvcOutput = nvcOutput;
         console.log('[Pipeline] NVC output:', this.nvcOutput);
         return this.nvcOutput;
     }
@@ -73,7 +91,7 @@ class SubtextPipeline {
      * @param {string} userText - User's text input (or same as transcribed)
      * @returns {object} - Complete pipeline output
      */
-    process(emotion, audioFeatures, transcribedText, userText) {
+    async process(emotion, audioFeatures, transcribedText, userText) {
         console.log('[Pipeline] Starting full pipeline...');
         
         // Stage 1: Interpret emotions from audio
@@ -84,7 +102,7 @@ class SubtextPipeline {
         );
         
         // Stage 2: Transform user text to NVC
-        const nvc = this.transformToNVC(userText || transcribedText);
+        const nvc = await this.transformToNVC(userText || transcribedText);
         
         // Return complete state
         const output = {

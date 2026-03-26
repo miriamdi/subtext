@@ -163,8 +163,21 @@ class NVCPractice {
             }
 
             // Optionally, display the result in the results panel as well
-            // Use local NVC framework for structured fields
-            const result = this.nvc.generateNVC(text);
+            // Use async LLM-backed NVC with fallback to rule-based
+            let result;
+            try {
+                if (typeof extractNVCWithFallback === 'function') {
+                    result = await extractNVCWithFallback(text);
+                    console.log('nvc-practice: Using LLM NVC:', result);
+                }
+            } catch (fallbackError) {
+                console.warn('nvc-practice: extractNVCWithFallback failed, reverting to local NVC', fallbackError);
+            }
+            if (!result || !isValidNVC(result)) {
+                console.log('nvc-practice: Using local NVCFramework fallback');
+                result = this.nvc.generateNVC(text);
+            }
+
             this.displayResults(result);
         } catch (error) {
             console.error('Error in analysis:', error);

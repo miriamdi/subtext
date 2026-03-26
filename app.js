@@ -370,7 +370,7 @@ class SubtextApp {
             // Pipeline Stage 1: Analyze emotional tone from audio
             // Pipeline Stage 2: Transform text to NVC structure
             console.log('[APP-DEBUG] Processing through pipeline...');
-            const pipelineResult = this.pipeline.process(
+            const pipelineResult = await this.pipeline.process(
                 this.emotion,
                 this.audioFeatures,
                 this.analyzedText,

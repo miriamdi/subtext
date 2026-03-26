@@ -210,9 +210,194 @@ class NVCFramework {
     }
 }
 
+// ----------------- Hugging Face LLM extraction -----------------
+async function extractNVC(text) {
+    const MODEL_NAME = 'mistralai/Mistral-7B-Instruct-v0.2';
+    const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
+
+    if (isBrowser) {
+        const explicitProxy = window.PROXY_NVC_URL || null;
+        const candidateUrls = [];
+        if (explicitProxy) candidateUrls.push(explicitProxy);
+        candidateUrls.push('http://127.0.0.1:5000/api/nvc');
+        candidateUrls.push('http://localhost:5000/api/nvc');
+        candidateUrls.push('/api/nvc');
+        candidateUrls.push(window.location.origin + '/api/nvc');
+
+        const body = JSON.stringify({ text });
+        let lastError = null;
+
+        for (const proxyUrl of candidateUrls) {
+            console.log('extractNVC: trying proxy', proxyUrl);
+            try {
+                const response = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body
+                });
+
+                const responseText = await response.text();
+                console.log('extractNVC: proxy response', proxyUrl, response.status, response.statusText, responseText);
+
+                if (!response.ok) {
+                    const err = new Error(`proxy HTTP ${response.status} ${response.statusText}`);
+                    err.responseText = responseText;
+                    console.warn('extractNVC: proxy non-OK response', proxyUrl, err);
+                    lastError = err;
+                    continue;
+                }
+
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseErr) {
+                    console.warn('extractNVC: proxy returned non-JSON, trying next if available', proxyUrl, parseErr);
+                    lastError = parseErr;
+                    continue;
+                }
+
+                if (!data || typeof data !== 'object' || data.error) {
+                    const err = new Error('proxy returned invalid payload');
+                    err.payload = data;
+                    console.warn('extractNVC: proxy returned invalid payload', proxyUrl, err);
+                    lastError = err;
+                    continue;
+                }
+
+                console.log('extractNVC: proxy success', proxyUrl, data);
+                return {
+                    observation: String(data.observation || '').trim(),
+                    feeling: String(data.feeling || '').trim(),
+                    need: String(data.need || '').trim(),
+                    request: String(data.request || '').trim()
+                };
+            } catch (error) {
+                console.error('extractNVC: proxy fetch error', proxyUrl, error);
+                lastError = error;
+                continue;
+            }
+        }
+
+        console.error('extractNVC: all proxy endpoints failed', lastError);
+        return { observation: '', feeling: '', need: '', request: '' };
+    }
+
+    // Node.js/server path: call HF directly
+    const hfTokenFromEnv = (typeof process !== 'undefined' && process.env && process.env.HF_TOKEN) ? process.env.HF_TOKEN : null;
+    const hfTokenFromWindow = (typeof window !== 'undefined' && window.HF_TOKEN) ? window.HF_TOKEN : null;
+    const HF_TOKEN = hfTokenFromEnv || hfTokenFromWindow || 'YOUR_HF_TOKEN';
+    const endpoint = `https://api-inference.huggingface.co/models/${MODEL_NAME}`;
+
+    const prompt = `You are an expert in Nonviolent Communication (NVC).\n\nYour task is to transform user input into 4 components:\n1. observation (objective, factual, no judgment)\n2. feeling (one word emotion)\n3. need (universal human need, not an action)\n4. request (specific, actionable, phrased as a question)\n\nRules:\n- Observation must be neutral (no blame, no \"I feel\")\n- Feeling must be one word (e.g., \"frustrated\", \"sad\")\n- Need must be universal (e.g., \"respect\", \"connection\")\n- Request must be concrete and doable (\"Could you...\")\n- If no request is appropriate, return \"\"\n\nReturn ONLY valid JSON:\n{\n  \"observation\": \"...\",\n  \"feeling\": \"...\",\n  \"need\": \"...\",\n  \"request\": \"...\"\n}\n\nExample:\nInput: \"You never listen to me, it's so frustrating\"\nOutput:\n{\n  \"observation\": \"When I speak and don't get a response\",\n  \"feeling\": \"frustrated\",\n  \"need\": \"understanding\",\n  \"request\": \"Could you listen and reflect back what you hear?\"\n}\n\nNow process this input:\n---\n${text}\n---`;
+
+    console.log('extractNVC: sending prompt to HF model', { model: MODEL_NAME, text });
+
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${HF_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                inputs: prompt,
+                parameters: {
+                    temperature: 0.2,
+                    max_new_tokens: 200,
+                    return_full_text: false
+                }
+            })
+        });
+
+        if (!response.ok) {
+            console.error('extractNVC: HTTP error', response.status, response.statusText);
+            return { observation: '', feeling: '', need: '', request: '' };
+        }
+
+        const data = await response.json();
+        let generatedText = '';
+
+        if (typeof data === 'string') {
+            generatedText = data;
+        } else if (Array.isArray(data)) {
+            generatedText = (data[0]?.generated_text || data[0]?.text || '') + '';
+        } else if (data?.generated_text) {
+            generatedText = data.generated_text;
+        } else if (data?.text) {
+            generatedText = data.text;
+        } else {
+            console.warn('extractNVC: unexpected response format', data);
+            return { observation: '', feeling: '', need: '', request: '' };
+        }
+
+        generatedText = generatedText.trim();
+        const firstBrace = generatedText.indexOf('{');
+        const lastBrace = generatedText.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            generatedText = generatedText.slice(firstBrace, lastBrace + 1);
+        }
+
+        console.log('extractNVC: raw generated text', generatedText);
+
+        try {
+            const parsed = JSON.parse(generatedText);
+            const result = {
+                observation: String(parsed.observation || '').trim(),
+                feeling: String(parsed.feeling || '').trim(),
+                need: String(parsed.need || '').trim(),
+                request: String(parsed.request || '').trim()
+            };
+            console.log('extractNVC: Hugging Face success', result);
+            return result;
+        } catch (jsonError) {
+            console.error('extractNVC: JSON parse error', jsonError);
+            return { observation: '', feeling: '', need: '', request: '' };
+        }
+
+    } catch (error) {
+        console.error('extractNVC: fetch error', error);
+        return { observation: '', feeling: '', need: '', request: '' };
+    }
+}
+
+function isValidNVC(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const hasObservation = typeof obj.observation === 'string' && obj.observation.trim().length > 0;
+    const hasFeeling = typeof obj.feeling === 'string' && obj.feeling.trim().length > 0;
+    const hasNeed = typeof obj.need === 'string' && obj.need.trim().length > 0;
+    const hasRequest = typeof obj.request === 'string';
+    return hasObservation && hasFeeling && hasNeed && hasRequest;
+}
+
+async function extractNVCWithFallback(text) {
+    console.log('extractNVCWithFallback: start', text);
+    const hfResult = await extractNVC(text);
+    console.log('extractNVCWithFallback: hfResult', hfResult);
+
+    if (isValidNVC(hfResult)) {
+        console.log('extractNVCWithFallback: using HF result');
+        return hfResult;
+    }
+
+    console.warn('extractNVCWithFallback: fallback to NVCFramework due to invalid HF result', hfResult);
+    const ruleResult = new NVCFramework().generateNVC(text);
+    const finalResult = {
+        observation: ruleResult.observation || '',
+        feeling: ruleResult.feeling || '',
+        need: ruleResult.need || '',
+        request: ruleResult.request || ''
+    };
+    console.log('extractNVCWithFallback: rule-based fallback result', finalResult);
+    return finalResult;
+}
+
 // ----------------- Export -----------------
 if(typeof module!=='undefined' && module.exports){
-    module.exports = NVCFramework;
+    module.exports = { NVCFramework, extractNVC, extractNVCWithFallback };
 } else {
     window.NVCFramework = NVCFramework;
+    window.extractNVC = extractNVC;
+    window.extractNVCWithFallback = extractNVCWithFallback;
 }
