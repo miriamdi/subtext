@@ -98,6 +98,10 @@ class SubtextApp {
         // Clear button
         this.clearSection = document.getElementById('clearSection');
         this.clearBtn = document.getElementById('clearBtn');
+
+        // Inline Start Over button (shown under Analyze after result)
+        this.startOverInlineSection = document.getElementById('startOverInlineSection');
+        this.startOverInlineBtn = document.getElementById('startOverInlineBtn');
     }
 
     /**
@@ -126,6 +130,10 @@ class SubtextApp {
         this.stopBtn.addEventListener('click', () => this.stopRecording());
         this.analyzeBtn.addEventListener('click', () => this.analyzeEmotion());
         this.clearBtn.addEventListener('click', () => this.resetApp());
+
+        if (this.startOverInlineBtn) {
+            this.startOverInlineBtn.addEventListener('click', () => this.resetApp());
+        }
 
         if (this.toggleNvcBtn) {
             this.toggleNvcBtn.addEventListener('click', () => this.toggleNvcInterpreter());
@@ -600,6 +608,9 @@ class SubtextApp {
         if (this.clearSection) {
             this.clearSection.style.display = 'block';
         }
+        if (this.startOverInlineSection) {
+            this.startOverInlineSection.style.display = 'block';
+        }
     }
 
     /**
@@ -620,6 +631,9 @@ class SubtextApp {
         this.nvcToggleSection.style.display = 'none';
         this.recordingComplete.style.display = 'none';
         this.recordingTime.style.display = 'none';
+        if (this.startOverInlineSection) {
+            this.startOverInlineSection.style.display = 'none';
+        }
 
         // Reset state
         this.audioFeatures = null;

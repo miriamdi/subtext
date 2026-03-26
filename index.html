@@ -7,13 +7,27 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 140'><text y='50%' x='50%' dominant-baseline='middle' text-anchor='middle' font-size='120'>🦒</text></svg>"></head>
 <body>
+    <aside class="side-menu">
+        <h2>Practice NVC with ChatGPT<br></h2>
+        <ul>
+            <li>
+                <a href="https://chatgpt.com/g/g-V2zXA5Os7-mnkhh-tqshvrt-mqrbt" target="_blank">
+                    <img src="nvc_gpt_he.png" alt="Hebrew GPT Logo">
+                     עברית
+                </a>
+            </li>
+            <li>
+                <a href="https://chatgpt.com/g/g-kSEMOYFPc-rephrase" target="_blank">
+                    <img src="nvc_gpt_en.png" alt="English GPT Logo">
+                    English
+                </a>
+            </li>
+        </ul>
+    </aside>
     <div class="container">
         <header>
             <div class="header-nav-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <!-- No Open Reference button in header -->
-                <a href="nvc-practice.html" class="nav-link-header" style="color: var(--primary-color); text-decoration: none; font-weight: 600; padding: 0.5rem 1rem; border-radius: 6px; transition: var(--transition); display: inline-flex; align-items: center; gap: 0.5rem;">
-                    <span>🎯</span> Practice NVC
-                </a>
+                <!-- Removed Practice NVC link from header -->
             </div>
             <h1 class="title">Subtext</h1>
             <p class="subtitle">Understand what's beneath your words</p>
@@ -59,6 +73,14 @@
                         <span class="method-icon">✨</span>
                         <span class="method-label">Analyze</span>
                     </button>
+
+                    <!-- Inline Start Over button visible after analysis -->
+                    <div id="startOverInlineSection" class="action-section" style="display:none; margin-top: 0.75rem;">
+                        <button id="startOverInlineBtn" class="btn btn-secondary btn-small">
+                            <span class="icon">↻</span> Start Over
+                        </button>
+                    </div>
+
                 </div>
             </section>
 
@@ -182,7 +204,12 @@
                         <span class="icon">📚</span> Reference Guide
                     </button>
                 </div>
-                <div class="nvc-framework">
+                <div class="action-section" id="clearSectionTop" style="display:none; margin-bottom: 1.5rem;">
+                    <button id="clearBtnTop" class="btn btn-secondary">
+                        <span class="icon">↻</span> Start Over
+                    </button>
+                </div>
+                <div class="nvc-framework nvc-grid-2x2">
                     <div class="nvc-item">
                         <div class="nvc-header">
                             <h3>Observation</h3>
@@ -190,12 +217,7 @@
                                 <span class="info-icon">ℹ️</span>
                             </button>
                         </div>
-                        <p 
-                            id="nvcObservation" 
-                            class="nvc-content nvc-editable"
-                            contenteditable="true"
-                            data-field="observation"
-                        >—</p>
+                        <p id="nvcObservation" class="nvc-content nvc-editable" contenteditable="true" data-field="observation">—</p>
                         <small class="edit-hint">💡 Click text to edit</small>
                     </div>
                     <div class="nvc-item">
@@ -205,12 +227,7 @@
                                 <span class="info-icon">ℹ️</span>
                             </button>
                         </div>
-                        <p 
-                            id="nvcFeeling" 
-                            class="nvc-content nvc-editable"
-                            contenteditable="true"
-                            data-field="feeling"
-                        >—</p>
+                        <p id="nvcFeeling" class="nvc-content nvc-editable" contenteditable="true" data-field="feeling">—</p>
                         <small class="edit-hint">💡 Click to edit</small>
                     </div>
                     <div class="nvc-item">
@@ -220,12 +237,7 @@
                                 <span class="info-icon">ℹ️</span>
                             </button>
                         </div>
-                        <p 
-                            id="nvcNeed" 
-                            class="nvc-content nvc-editable"
-                            contenteditable="true"
-                            data-field="need"
-                        >—</p>
+                        <p id="nvcNeed" class="nvc-content nvc-editable" contenteditable="true" data-field="need">—</p>
                         <small class="edit-hint">💡 Click to edit</small>
                     </div>
                     <div class="nvc-item">
@@ -235,12 +247,7 @@
                                 <span class="info-icon">ℹ️</span>
                             </button>
                         </div>
-                        <p 
-                            id="nvcRequest" 
-                            class="nvc-content nvc-editable"
-                            contenteditable="true"
-                            data-field="request"
-                        >—</p>
+                        <p id="nvcRequest" class="nvc-content nvc-editable" contenteditable="true" data-field="request">—</p>
                         <small class="edit-hint">💡 Click to edit</small>
                     </div>
                 </div>
@@ -255,7 +262,7 @@
         </main>
 
         <footer>
-            <p>� Subtext helps you communicate with clarity and compassion</p>
+            <p>Created with ❤️ by Copilot & <a href="https://www.linkedin.com/in/miriam-dissen/" target="_blank">Miriam Dissen</a></p>
         </footer>
     </div>
 
