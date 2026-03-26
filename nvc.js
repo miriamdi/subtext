@@ -215,6 +215,11 @@ async function extractNVC(text) {
     const MODEL_NAME = 'mistralai/Mistral-7B-Instruct-v0.2';
     const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
 
+    if (isBrowser && !window.PROXY_NVC_URL) {
+        window.PROXY_NVC_URL = 'https://subtext-je6y.onrender.com/api/nvc';
+        console.log('extractNVC: defaulting PROXY_NVC_URL to', window.PROXY_NVC_URL);
+    }
+
     if (isBrowser) {
         const explicitProxy = window.PROXY_NVC_URL || null;
         const candidateUrls = [];
@@ -288,28 +293,51 @@ async function extractNVC(text) {
     const hfTokenFromEnv = (typeof process !== 'undefined' && process.env && process.env.HF_TOKEN) ? process.env.HF_TOKEN : null;
     const hfTokenFromWindow = (typeof window !== 'undefined' && window.HF_TOKEN) ? window.HF_TOKEN : null;
     const HF_TOKEN = hfTokenFromEnv || hfTokenFromWindow || 'YOUR_HF_TOKEN';
-    const endpoint = `https://api-inference.huggingface.co/models/${MODEL_NAME}`;
+
+    const endpointTextGen = 'https://router.huggingface.co/api/text-generation';
+    const endpointChat = 'https://router.huggingface.co/api/chat';
 
     const prompt = `You are an expert in Nonviolent Communication (NVC).\n\nYour task is to transform user input into 4 components:\n1. observation (objective, factual, no judgment)\n2. feeling (one word emotion)\n3. need (universal human need, not an action)\n4. request (specific, actionable, phrased as a question)\n\nRules:\n- Observation must be neutral (no blame, no \"I feel\")\n- Feeling must be one word (e.g., \"frustrated\", \"sad\")\n- Need must be universal (e.g., \"respect\", \"connection\")\n- Request must be concrete and doable (\"Could you...\")\n- If no request is appropriate, return \"\"\n\nReturn ONLY valid JSON:\n{\n  \"observation\": \"...\",\n  \"feeling\": \"...\",\n  \"need\": \"...\",\n  \"request\": \"...\"\n}\n\nExample:\nInput: \"You never listen to me, it's so frustrating\"\nOutput:\n{\n  \"observation\": \"When I speak and don't get a response\",\n  \"feeling\": \"frustrated\",\n  \"need\": \"understanding\",\n  \"request\": \"Could you listen and reflect back what you hear?\"\n}\n\nNow process this input:\n---\n${text}\n---`;
 
     console.log('extractNVC: sending prompt to HF model', { model: MODEL_NAME, text });
 
     try {
-        const response = await fetch(endpoint, {
+        let response = await fetch(endpointTextGen, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${HF_TOKEN}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+                model: MODEL_NAME,
                 inputs: prompt,
                 parameters: {
                     temperature: 0.2,
-                    max_new_tokens: 200,
-                    return_full_text: false
+                    max_new_tokens: 200
                 }
             })
         });
+
+        if ([404, 405, 410].includes(response.status)) {
+            const badText = await response.text();
+            console.warn('extractNVC: text-generation route failed, trying chat route', response.status, badText);
+            response = await fetch(endpointChat, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${HF_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: MODEL_NAME,
+                    messages: [
+                        { role: 'system', content: 'You are an expert in Nonviolent Communication (NVC).' },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.2,
+                    max_new_tokens: 200
+                })
+            });
+        }
 
         if (!response.ok) {
             console.error('extractNVC: HTTP error', response.status, response.statusText);

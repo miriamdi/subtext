@@ -16,27 +16,58 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const { NVCFramework } = require('./nvc');
 const HF_TOKEN = process.env.HF_API_KEY || process.env.HF_TOKEN || '';
 const HF_MODEL_NAME = process.env.HF_MODEL_NAME || 'mistralai/Mistral-7B-Instruct-v0.2';
 
 async function callHuggingFaceNVC(text) {
   const prompt = `You are an expert in Nonviolent Communication (NVC).\n\nYour task is to transform user input into 4 components:\n1. observation (objective, factual, no judgment)\n2. feeling (one word emotion)\n3. need (universal human need, not an action)\n4. request (specific, actionable, phrased as a question)\n\nRules:\n- Observation must be neutral (no blame, no \"I feel\")\n- Feeling must be one word\n- Need must be universal\n- Request must be concrete and doable\n- If no request is appropriate, return \"\"\n\nReturn ONLY valid JSON:\n{\n  \"observation\": \"...\",\n  \"feeling\": \"...\",\n  \"need\": \"...\",\n  \"request\": \"...\"\n}\n\nNow process this input:\n---\n${text}\n---`;
 
-  const response = await fetch(`https://api-inference.huggingface.co/models/${HF_MODEL_NAME}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${HF_TOKEN}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      inputs: prompt,
-      parameters: {
-        temperature: 0.2,
-        max_new_tokens: 200,
-        return_full_text: false
-      }
-    })
-  });
+  const routerApiTextGen = 'https://router.huggingface.co/api/text-generation';
+  const routerApiChat = 'https://router.huggingface.co/api/chat';
+
+  let response;
+  try {
+    response = await fetch(routerApiTextGen, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HF_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: HF_MODEL_NAME,
+        inputs: prompt,
+        parameters: {
+          temperature: 0.2,
+          max_new_tokens: 200
+        }
+      })
+    });
+
+    // If text-generation route isn't supported, fallback to chat route
+    if (response.status === 404 || response.status === 405 || response.status === 410) {
+      const errorText = await response.text();
+      console.warn('callHuggingFaceNVC: text-generation route bad status, trying chat route', response.status, errorText);
+      response = await fetch(routerApiChat, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${HF_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: HF_MODEL_NAME,
+          messages: [
+            { role: 'system', content: 'You are an expert in Nonviolent Communication (NVC).' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.2,
+          max_new_tokens: 200
+        })
+      });
+    }
+  } catch (err) {
+    throw new Error('HF request error: ' + err.message);
+  }
 
   if (!response.ok) {
     const errText = await response.text();
@@ -46,6 +77,7 @@ async function callHuggingFaceNVC(text) {
   const data = await response.json();
   let generatedText = '';
 
+  // Router output may carry a 'generated_text' or a choices array
   if (typeof data === 'string') {
     generatedText = data;
   } else if (Array.isArray(data)) {
@@ -54,8 +86,10 @@ async function callHuggingFaceNVC(text) {
     generatedText = data.generated_text;
   } else if (data?.text) {
     generatedText = data.text;
+  } else if (data?.choices && Array.isArray(data.choices) && data.choices[0]) {
+    generatedText = (data.choices[0]?.message?.content || data.choices[0]?.text || '') + '';
   } else {
-    throw new Error('Unexpected HF response format');
+    throw new Error('Unexpected HF response format: ' + JSON.stringify(data));
   }
 
   generatedText = generatedText.trim();
@@ -90,8 +124,10 @@ app.post('/api/nvc', async (req, res) => {
     }
 
     if (!HF_TOKEN) {
-      console.error('[POST /api/nvc] Missing HF_TOKEN on server');
-      return res.status(500).json({ error: 'HF_TOKEN not configured on server' });
+      console.warn('[POST /api/nvc] HF_TOKEN not configured; using local NVCFramework fallback');
+      const localResult = new NVCFramework().generateNVC(text);
+      console.log('[POST /api/nvc] localResult:', localResult);
+      return res.json(localResult);
     }
 
     const nvc = await callHuggingFaceNVC(text);
@@ -113,17 +149,42 @@ app.post('/chat', async (req, res) => {
     const systemPrompt = `You are an NVC (Nonviolent Communication) coach.\n1. Identify:\nObservation:\nFeeling:\nNeed:\nRequest:\n2. If missing elements, explain what’s missing.\n3. Suggest a better NVC phrasing.\n4. Respond briefly and clearly.`;
     const fullPrompt = `${systemPrompt}\nUser said: "${message}"`;
 
-    const hfRes = await fetch(`https://api-inference.huggingface.co/models/katanemo/Arch-Router-1.5B`, {
+    const routerApiTextGen = 'https://router.huggingface.co/api/text-generation';
+    const routerApiChat = 'https://router.huggingface.co/api/chat';
+
+    let hfRes = await fetch(routerApiTextGen, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${HF_TOKEN}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
+        model: HF_MODEL_NAME,
         inputs: fullPrompt,
-        options: { wait_for_model: true }
+        parameters: { wait_for_model: true }
       })
     });
+
+    if ([404, 405, 410].includes(hfRes.status)) {
+      const errText = await hfRes.text();
+      console.warn('POST /chat: text-generation fallback to chat route', hfRes.status, errText);
+      hfRes = await fetch(routerApiChat, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${HF_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: HF_MODEL_NAME,
+          messages: [
+            { role: 'system', content: 'You are an NVC (Nonviolent Communication) coach.' },
+            { role: 'user', content: fullPrompt }
+          ],
+          temperature: 0.2,
+          max_new_tokens: 200
+        })
+      });
+    }
 
     if (!hfRes.ok) {
       const errText = await hfRes.text();
