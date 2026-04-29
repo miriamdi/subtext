@@ -151,41 +151,41 @@ class NVCPractice {
             this.renderMessage('user', text);
         }
 
+        let result;
+        let llmError = null;
         try {
-            // Build prompt for Hugging Face
-            const prompt = this.buildNVCPrompt(text);
-            // Call Hugging Face API
-            const aiResponse = await this.callHuggingFace(prompt);
-
-            // Display AI response in chat area (if available)
-            if (this.chatContainer && aiResponse) {
-                this.renderMessage('assistant', aiResponse);
-            }
-
-            // Optionally, display the result in the results panel as well
             // Use async LLM-backed NVC with fallback to rule-based
-            let result;
-            try {
-                if (typeof extractNVCWithFallback === 'function') {
-                    result = await extractNVCWithFallback(text);
-                    console.log('nvc-practice: Using LLM NVC:', result);
-                }
-            } catch (fallbackError) {
-                console.warn('nvc-practice: extractNVCWithFallback failed, reverting to local NVC', fallbackError);
+            if (typeof extractNVCWithFallback === 'function') {
+                console.log('[NVC-PRACTICE] Calling extractNVCWithFallback with:', text);
+                result = await extractNVCWithFallback(text);
+                console.log('[NVC-PRACTICE] LLM NVC result:', result);
+            } else {
+                console.error('[NVC-PRACTICE] extractNVCWithFallback is not a function!');
+                llmError = 'NVC LLM extraction function not available.';
             }
-            if (!result || !isValidNVC(result)) {
-                console.log('nvc-practice: Using local NVCFramework fallback');
-                result = this.nvc.generateNVC(text);
-            }
-
-            this.displayResults(result);
-        } catch (error) {
-            console.error('Error in analysis:', error);
-            this.showError('Unable to analyze text. Please try again.');
-        } finally {
-            this.practiceBtn.disabled = false;
-            this.loadingSpinner.style.display = 'none';
+        } catch (fallbackError) {
+            console.error('[NVC-PRACTICE] extractNVCWithFallback threw error:', fallbackError);
+            llmError = fallbackError && fallbackError.message ? fallbackError.message : fallbackError;
         }
+
+        if (!result || !isValidNVC(result)) {
+            if (llmError) {
+                this.showError('LLM NVC extraction failed: ' + llmError);
+            } else {
+                this.showError('LLM NVC extraction returned invalid result. Falling back to rule-based extraction.');
+            }
+            console.warn('[NVC-PRACTICE] Falling back to local NVCFramework. LLM error:', llmError, 'Result:', result);
+            result = this.nvc.generateNVC(text);
+        }
+
+        this.displayResults(result);
+        if (this.chatContainer && result) {
+            this.renderMessage('assistant', JSON.stringify(result, null, 2));
+        }
+
+        this.practiceBtn.disabled = false;
+        this.loadingSpinner.style.display = 'none';
+    }
     }
 
     /**

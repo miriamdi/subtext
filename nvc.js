@@ -215,19 +215,39 @@ async function extractNVC(text) {
     const MODEL_NAME = 'mistralai/Mistral-7B-Instruct-v0.2';
     const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
 
-    if (isBrowser && !window.PROXY_NVC_URL) {
-        window.PROXY_NVC_URL = 'https://subtext-je6y.onrender.com/api/nvc';
-        console.log('extractNVC: defaulting PROXY_NVC_URL to', window.PROXY_NVC_URL);
-    }
-
     if (isBrowser) {
-        const explicitProxy = window.PROXY_NVC_URL || null;
+        // Determine environment and set proxy URL logic
+        const origin = window.location.origin;
+        const host = window.location.host;
+        let proxyUrl = null;
+
+        // Always use deployed backend for GitHub Pages or static debug server
+        if (
+            origin.includes('github.io') ||
+            host === '127.0.0.1:8000' ||
+            host === 'localhost:8000'
+        ) {
+            proxyUrl = 'https://subtext-je6y.onrender.com/api/nvc';
+        } else if (
+            host.startsWith('localhost:') ||
+            host.startsWith('127.0.0.1:')
+        ) {
+            // Try local backend first, then deployed backend as fallback
+            proxyUrl = null; // Will use candidateUrls below
+        } else {
+            // Default to deployed backend for any other case
+            proxyUrl = 'https://subtext-je6y.onrender.com/api/nvc';
+        }
+
         const candidateUrls = [];
-        if (explicitProxy) candidateUrls.push(explicitProxy);
-        candidateUrls.push('http://127.0.0.1:5000/api/nvc');
-        candidateUrls.push('http://localhost:5000/api/nvc');
-        candidateUrls.push('/api/nvc');
-        candidateUrls.push(window.location.origin + '/api/nvc');
+        if (proxyUrl) {
+            candidateUrls.push(proxyUrl);
+        } else {
+            candidateUrls.push('http://127.0.0.1:5000/api/nvc');
+            candidateUrls.push('http://localhost:5000/api/nvc');
+            candidateUrls.push('/api/nvc');
+            candidateUrls.push('https://subtext-je6y.onrender.com/api/nvc');
+        }
 
         const body = JSON.stringify({ text });
         let lastError = null;
@@ -297,7 +317,64 @@ async function extractNVC(text) {
     const endpointTextGen = 'https://router.huggingface.co/api/text-generation';
     const endpointChat = 'https://router.huggingface.co/api/chat';
 
-    const prompt = `You are an expert in Nonviolent Communication (NVC).\n\nYour task is to transform user input into 4 components:\n1. observation (objective, factual, no judgment)\n2. feeling (one word emotion)\n3. need (universal human need, not an action)\n4. request (specific, actionable, phrased as a question)\n\nRules:\n- Observation must be neutral (no blame, no \"I feel\")\n- Feeling must be one word (e.g., \"frustrated\", \"sad\")\n- Need must be universal (e.g., \"respect\", \"connection\")\n- Request must be concrete and doable (\"Could you...\")\n- If no request is appropriate, return \"\"\n\nReturn ONLY valid JSON:\n{\n  \"observation\": \"...\",\n  \"feeling\": \"...\",\n  \"need\": \"...\",\n  \"request\": \"...\"\n}\n\nExample:\nInput: \"You never listen to me, it's so frustrating\"\nOutput:\n{\n  \"observation\": \"When I speak and don't get a response\",\n  \"feeling\": \"frustrated\",\n  \"need\": \"understanding\",\n  \"request\": \"Could you listen and reflect back what you hear?\"\n}\n\nNow process this input:\n---\n${text}\n---`;
+        const prompt = `You are an expert in Nonviolent Communication (NVC).
+
+Your task: Given any user input, infer and output ALL FOUR NVC fields:
+1. observation (neutral, objective, no judgment)
+2. feeling (emotion, 1–3 words max)
+3. need (universal human need, 1–3 words max)
+4. request (simple, actionable, phrased as a question)
+
+Instructions:
+- ALWAYS return all four fields. Never use placeholders like "unknown", "N/A", "no clear feeling", or empty strings.
+- If information is vague or missing, INFER the most likely feeling, need, and request based on context and common human experience.
+- Map vague or indirect expressions to likely emotions (e.g., "fine" → "resigned", "doesn't work" → "frustrated").
+- The request should be a natural, concrete question—even if the input doesn't contain one, generate a likely request.
+- Output must be STRICTLY valid JSON, with no extra text.
+- Use concise wording (1–5 words per field). Do NOT repeat the full input in any field.
+- Observation must be neutral and factual (no blame, no "I feel").
+
+Few-shot examples:
+Input: "what to do? im not sure"
+Output:
+{
+    "observation": "Uncertainty about next steps",
+    "feeling": "confused",
+    "need": "clarity",
+    "request": "Could you help me decide what to do next?"
+}
+
+Input: "doesnt seem to work!!"
+Output:
+{
+    "observation": "Tried something and it failed",
+    "feeling": "frustrated",
+    "need": "support",
+    "request": "Could you help me fix this?"
+}
+
+Input: "fine."
+Output:
+{
+    "observation": "Asked about my state",
+    "feeling": "resigned",
+    "need": "acceptance",
+    "request": "Could you give me some space?"
+}
+
+Input: "You never listen to me, it's so frustrating"
+Output:
+{
+    "observation": "When I speak and don't get a response",
+    "feeling": "frustrated",
+    "need": "understanding",
+    "request": "Could you listen and reflect back what you hear?"
+}
+
+Now process this input:
+---
+${text}
+---`;
 
     console.log('extractNVC: sending prompt to HF model', { model: MODEL_NAME, text });
 
@@ -400,16 +477,28 @@ function isValidNVC(obj) {
 }
 
 async function extractNVCWithFallback(text) {
-    console.log('extractNVCWithFallback: start', text);
-    const hfResult = await extractNVC(text);
-    console.log('extractNVCWithFallback: hfResult', hfResult);
+    console.log('[NVC] extractNVCWithFallback: called with', text);
+    let hfResult = null;
+    let fetchError = null;
+    try {
+        hfResult = await extractNVC(text);
+        console.log('[NVC] extractNVCWithFallback: hfResult', hfResult);
+    } catch (err) {
+        fetchError = err;
+        console.error('[NVC] extractNVCWithFallback: fetch threw error', err);
+    }
 
     if (isValidNVC(hfResult)) {
-        console.log('extractNVCWithFallback: using HF result');
+        console.log('[NVC] extractNVCWithFallback: using HF result');
         return hfResult;
     }
 
-    console.warn('extractNVCWithFallback: fallback to NVCFramework due to invalid HF result', hfResult);
+    if (fetchError) {
+        // Surface error to caller
+        throw new Error('[NVC] LLM fetch failed: ' + (fetchError.message || fetchError));
+    }
+
+    console.warn('[NVC] extractNVCWithFallback: fallback to NVCFramework due to invalid HF result', hfResult);
     const ruleResult = new NVCFramework().generateNVC(text);
     const finalResult = {
         observation: ruleResult.observation || '',
@@ -417,7 +506,7 @@ async function extractNVCWithFallback(text) {
         need: ruleResult.need || '',
         request: ruleResult.request || ''
     };
-    console.log('extractNVCWithFallback: rule-based fallback result', finalResult);
+    console.log('[NVC] extractNVCWithFallback: rule-based fallback result', finalResult);
     return finalResult;
 }
 

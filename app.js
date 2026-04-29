@@ -380,6 +380,10 @@ class SubtextApp {
             this.nvcResult = pipelineResult.stage2.data;
             console.log('[APP-DEBUG] Pipeline complete:', pipelineResult);
 
+            // Auto-open NVC panel when new result is available
+            this.nvcPanelOpen = true;
+            console.log('[APP-DEBUG] Auto-opening NVC panel due to new result');
+
             // Display results
             this.displayEmotionState();
             this.displayNVCResults();

@@ -63,8 +63,11 @@ class TranslationManager {
             return 'fr';
         }
 
-        // Common German words
-        if (/(hallo|danke|bitte|wie|wo|wann|warum)/i.test(lowerText)) {
+        // Common German words, but avoid false positives for English text
+        // Only match if at least 2 German words are present and text is not mostly English
+        const germanWords = (lowerText.match(/(hallo|danke|bitte|wie|wo|wann|warum)/gi) || []).length;
+        const englishWords = (lowerText.match(/\b(the|and|is|are|what|do|you|i|to|a|of|in|it|that|for|on|with|as|was|at|by|an|be|this|have|from|or|one|had|word|but|not|all|were|we|when|your|can|said|there|use|each|which|she|how|their|if|will|up|other|about|out|many|then|them|these|so|some|her|would|make|like|him|into|time|has|look|two|more|write|go|see|number|no|way|could|people|my|than|first|water|been|call|who|oil|its|now|find|long|down|day|did|get|come|made|may|part)\b/gi) || []).length;
+        if (germanWords >= 2 && englishWords < 3) {
             return 'de';
         }
 
